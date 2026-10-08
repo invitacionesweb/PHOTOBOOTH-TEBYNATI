@@ -132,11 +132,11 @@
     <div class="final-frame"><img id="finalImg" alt="tu foto"></div>
     <div class="final-text">
       <h2>¡Fotones!</h2>
-      <p>No olvides compartirla en redes<br>y etiquetarnos 💛</p>
+      <p>No olvides compartirla en redes<br>y etiquetarnos</p>
     </div>
     <div class="final-btns">
       <button class="btn" onclick="savePhoto()">Guardar en mi celu 📲</button>
-      <button class="btn btn-outline" onclick="shareInstagram()">Compartir en redes 📸</button>
+      <a class="btn btn-outline" id="followBtn" target="_blank" rel="noopener">Seguinos en redes</a>
     </div>
     <div class="share-hint" id="shareHint"></div>
     <button class="redo" onclick="restart()">Sacar otra foto</button>
@@ -151,30 +151,21 @@
 // ⚙️ CONFIGURACIÓN — editá solo esto para cada cliente
 // ============================================
 const CONFIG = {
-  // Nombre de los novios (aparece en el título, en el texto de compartir
-  // y en el nombre del archivo de la foto)
+  // Nombre de los novios (aparece en el título y en el nombre del archivo de la foto)
   novios: 'Lolo y Maca',
 
-  // Instagram de los novios (opcional). Si lo completás, se suma a la etiqueta.
-  // Ej: '@loloymaca' — si no tienen o no quieren, dejalo vacío: ''
-  instagramNovios: '',
-
-  // Nuestra cuenta — siempre se etiqueta 💛
-  instagramVoy: '@voyinvitacionesweb',
-
-  // Escribir el @ de Voy chiquito al pie de la foto final (true / false)
-  marcaEnFoto: true,
-  colorMarca: '#721423', // color de ese texto (que contraste con el fondo de la foto)
+  // Instagram al que lleva el botón "Seguinos en redes".
+  // Poné solo el usuario, sin @ (ej: 'loloymaca')
+  instagram: 'loloymaca',
 
   // Imágenes de fondo: están en la carpeta "fondos/" al lado de este archivo.
   bgFoto:     'fondos/fondo-foto-tira.png',   // fondo cuando se elige "Tira de 3"
   bgFotoGrid: 'fondos/fondo-foto-grilla.png', // fondo cuando se elige "Grilla 2x2"
 };
 
-// Texto de etiquetas (Voy + novios si hay)
-const ETIQUETAS = [CONFIG.instagramNovios, CONFIG.instagramVoy].filter(Boolean).join(' ');
-
 document.title = 'Photobooth · ' + CONFIG.novios;
+document.getElementById('followBtn').href =
+  'https://www.instagram.com/' + CONFIG.instagram.replace('@','').trim() + '/';
 
 // Convierte "Lau y Nacho" en "lau-y-nacho" para usarlo en nombres de archivo
 function slug(str) {
@@ -347,19 +338,7 @@ function drawPhotos(ctx) {
       if(!drawSlot(ctx, src, startX+col*(gridSize+PAD), startY+row*(gridSize+PAD), gridSize, gridSize)) allDrawn = false;
     });
   }
-  if(allDrawn && CONFIG.marcaEnFoto) drawMarca(ctx);
   compositeReady = allDrawn;
-}
-
-// @ de Voy chiquito al pie de la foto
-function drawMarca(ctx) {
-  ctx.save();
-  ctx.font = '38px Schoolbell, cursive';
-  ctx.fillStyle = CONFIG.colorMarca;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText(CONFIG.instagramVoy, CW/2, CH - 40);
-  ctx.restore();
 }
 
 function drawSlot(ctx, src, x, y, w, h) {
