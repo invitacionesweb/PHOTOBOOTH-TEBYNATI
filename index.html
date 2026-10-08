@@ -76,11 +76,11 @@
   /* Screen 3 — resultado */
   #screen-3{background-color:var(--color-2);justify-content:center;padding:28px 28px 30px;gap:12px;align-items:center;}
   .final-frame{width:62%;border-radius:var(--radius);overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.25);flex-shrink:0;}
-  /* Permite el "mantener apretado → Guardar imagen" en iPhone y Android */
-  #finalImg{width:100%;display:block;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto;pointer-events:auto;}
+  #finalImg{width:100%;display:block;}
   #screen-3 h2{font-family:var(--font-titulos);font-size:28px;color:var(--color-0);}
-  .hold-hint{font-size:17px;color:var(--color-0);text-align:center;line-height:1.3;}
-  .tag-pill{font-size:15px;color:var(--color-0);background:rgba(255,255,255,.15);border:1.5px dashed rgba(255,255,255,.6);border-radius:50px;padding:6px 14px;text-align:center;}
+  .btn-outline{background:transparent;border:2px solid rgba(255,255,255,.7);}
+  .final-text{text-align:center;}
+  .final-text p{font-size:17px;color:var(--color-0);line-height:1.3;margin-top:4px;}
   .final-btns{display:flex;flex-direction:column;gap:10px;width:100%;}
   .share-hint{font-size:13px;color:rgba(255,255,255,.85);text-align:center;min-height:18px;}
   .redo{font-family:var(--font-botones);font-size:16px;color:rgba(255,255,255,.8);background:none;border:none;cursor:pointer;text-decoration:underline;text-align:center;}
@@ -130,11 +130,13 @@
 
   <section class="screen" id="screen-3">
     <div class="final-frame"><img id="finalImg" alt="tu foto"></div>
-    <h2>¡Fotones!</h2>
-    <p class="hold-hint">Mantené apretada la foto<br>para guardarla 📲</p>
-    <div class="tag-pill" id="tagPill"></div>
+    <div class="final-text">
+      <h2>¡Fotones!</h2>
+      <p>No olvides compartirla en redes<br>y etiquetarnos 💛</p>
+    </div>
     <div class="final-btns">
-      <button class="btn" onclick="shareInstagram()">Compartir en Instagram 📸</button>
+      <button class="btn" onclick="savePhoto()">Guardar en mi celu 📲</button>
+      <button class="btn btn-outline" onclick="shareInstagram()">Compartir en redes 📸</button>
     </div>
     <div class="share-hint" id="shareHint"></div>
     <button class="redo" onclick="restart()">Sacar otra foto</button>
@@ -158,7 +160,7 @@ const CONFIG = {
   instagramNovios: '',
 
   // Nuestra cuenta — siempre se etiqueta 💛
-  instagramVoy: '@siquiero.arg',
+  instagramVoy: '@voyinvitacionesweb',
 
   // Escribir el @ de Voy chiquito al pie de la foto final (true / false)
   marcaEnFoto: true,
@@ -173,7 +175,6 @@ const CONFIG = {
 const ETIQUETAS = [CONFIG.instagramNovios, CONFIG.instagramVoy].filter(Boolean).join(' ');
 
 document.title = 'Photobooth · ' + CONFIG.novios;
-document.getElementById('tagPill').textContent = 'Etiquetanos: ' + ETIQUETAS + ' 💛';
 
 // Convierte "Lau y Nacho" en "lau-y-nacho" para usarlo en nombres de archivo
 function slug(str) {
@@ -406,6 +407,39 @@ function goToFinal() {
   showScreen('screen-3');
 }
 
+// ---- GUARDAR EN EL CELU ----
+// iPhone: abre el menú del sistema → "Guardar imagen" (va directo a Fotos).
+// Android / compu: descarga el archivo (aparece en Galería / Descargas).
+async function savePhoto() {
+  const hintEl = document.getElementById('shareHint');
+  const dataUrl = document.getElementById('finalImg').src;
+  const nombre = 'photobooth-' + slug(CONFIG.novios) + '.jpg';
+  try {
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const file = new File([blob], nombre, {type:'image/jpeg'});
+    const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if(esIOS && navigator.canShare && navigator.canShare({files:[file]})) {
+      hintEl.textContent = 'Tocá "Guardar imagen" y queda en tus Fotos 📸';
+      await navigator.share({ files:[file] });
+      hintEl.textContent = '';
+      return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nombre;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    hintEl.textContent = '¡Guardada! Buscala en tu galería 📁';
+  } catch(err) {
+    if(err && err.name === 'AbortError') { hintEl.textContent = ''; return; }
+    hintEl.textContent = 'No pudimos guardarla, probá de nuevo 🙏';
+  }
+}
+
 // ---- COMPARTIR EN INSTAGRAM ----
 async function shareInstagram() {
   const hintEl = document.getElementById('shareHint');
@@ -427,7 +461,10 @@ async function shareInstagram() {
   } catch(err) {
     if(err && err.name === 'AbortError') return; // cerraron el menú de compartir
   }
-  hintEl.textContent = 'Guardá la foto (mantenela apretada) y subila a Instagram etiquetando ' + ETIQUETAS;
+  // Si el navegador no tiene menú de compartir: guardamos la foto y abrimos Instagram
+  await savePhoto();
+  hintEl.textContent = 'Subila desde tu galería y pegá ' + ETIQUETAS + ' 💛';
+  setTimeout(() => { window.location.href = 'instagram://camera'; }, 800);
 }
 
 function restart() {
